@@ -1,4 +1,7 @@
-function maxForce = Set_10_FEA_F23()
+function [MaxForce, MaxIndex, Displacements] = SolveTruss_Momot(node)
+
+OPTIMIZE = 1;
+
 %    Dr. Mike Momot,  November 13, 2023
 % Last modified 12/8/2022. Convert displacement to local coords. Runs well.
 % Description:  Determines the forces in a 2-D truss.  The truss is
@@ -32,7 +35,11 @@ function maxForce = Set_10_FEA_F23()
 % fid = fopen('Set_10_FEA_F23.txt','r');
 % x(1:10) = 0.0;    % save space for x data
 DigitsOld = digits(50);  % Higher precision
- node = readmatrix('Set_10_FEA_F23.txt');  % (x,y) location of each node
+% ========= CHANGED ========
+if isempty(node)
+     node = readmatrix('Set_10_FEA_F23.txt');  % (x,y) location of each node
+end
+% ========== ==========
  x = node(:,1);  % x locations of nodes
  y = node(:,2);  % y locations of nodes
 % fclose(fid);
@@ -105,7 +112,6 @@ for R=1:nele  % R = row...cycle through all elements
     K(i:i+1,j:j+1) = K(i:i+1,j:j+1) - T(1:2,1:2);  % Quadrant 1:2
     K(j:j+1,i:i+1) = K(j:j+1,i:i+1) - T(1:2,1:2);  % Quadrant 2:1
 end
-
 %_________________Part 3: Find Displacements & External Forces_________
 % Reduce K...remove rows/cols 13, 14 and 20 
 % These are the pivots with zero displacement, (can check forces)
@@ -122,11 +128,13 @@ Fred(13:14) = [];     % Nullify rows 13 and 14 of the forces
 D = inv(Kred)*Fred;  % Find displacements
 D = [D(1:12);0.0;0.0;D(13:17);0.0];  % Add 0 disp to column vector
 F = K*D;
+% ========= ADDED ========
+Displacements = D;
+% ========== ==========
 
 %________________Part 4: Determine Internal Forces in Elements_________
 
 % Determine change in length for each element (link), and force
-deltalength = zeros(nele, 1);
 for R=1:nele
     fn = link(R,1);   % From node
     tn = link(R,2);   % To node
@@ -142,61 +150,52 @@ for R=1:nele
      
     % Added 12/8/2022 to fix errors. Answers checked and are good.
     theta = atan2(yt-yf,xt-xf);
-    Ct = cos(theta);
-    St = sin(theta);
+    Ct = cos(theta); St = sin(theta);
     
     % Determine the change in overall length
-    dLen = Ct*(dxt-dxf)+St*(dyt-dyf);  % New and improved
-    %dLen - (Len(R) - sqrt(((xt+dxt)-(xf+dxf))^2 + ((yt+dyt)-(yf+dyf))^2))
-    deltalength(R) = dLen; %dyt-dyf;(Len(R) - sqrt(((xt+dxt)-(xf+dxf))^2 + ((yt+dyt)-(yf+dyf))^2));
+    dLen = Ct*(dxt-dxf)+St*(dyt-dyf);   % New and improved
     dL(R) = dLen*100;   % Store change in length in hundredths of inch
         % Check the following....%
     Force(R) = AE*dLen/Len(R);  % Force in each link, F=A(E*strain)
 end
 
-
-% Print deflection and force data
-fprintf('Deflection data (negative is compression)\n');
-fprintf('Link_# From_node To_node Displace*100 Force\n');
-for R=1:nele
-    fn = link(R,1);
-    tn = link(R,2);
-    fprintf('%5d%8d%8d%12.4f%10.2f\n',R,fn,tn,dL(R),Force(R));
-    fprintf('(%5.2f,%5.2f), (%5.2f,%5.2f)\n',node(fn,1),node(fn,2),node(tn,1),node(tn,2));
-end
-% Print maximum force value (final answer)
 [FM, I] = max(abs(Force));
-maxForce = max(abs(Force));
-fprintf('Maximum force is :\n');
-fprintf('%7d %9.2f\n', I, FM);
+% ========= ADDED ========
+MaxForce = FM;
+MaxIndex = I;
 
+if ~OPTIMIZE
+    fprintf('Maximum force is :\n');
+    fprintf('%7d %9.2f\n', I, FM);
 
 % Plot the links and their displacements
 % Added 11/11/2022
-clf
-hold on     % allows overplot of other lines
-for R=1:nele
-    fn = link(R,1);   % From node
-    tn = link(R,2);   % To node
-
-    xf = node(fn,1);  % x value of "from node"
-    yf = node(fn,2);  % y value of "from node"
-    xt = node(tn,1);  % x value of "to node"
-    yt = node(tn,2);  % y value of "to node"
-
-    dxf = D(fn*2-1)+xf;  % deformed x value of "from node"
-    dyf = D(fn*2)+yf;    % deformed y value of "from node"
-    dxt = D(tn*2-1)+xt;  % deformed x value of "to node" 
-    dyt = D(tn*2)+yt;    % deformed y value of "to node"
-
-    plot([xf,xt],[yf yt],'k'); % original configuration
-    if R == I
-        plot([dxf,dxt],[dyf,dyt],'b'); % blue link shows maximum force
-    else
-        plot([dxf,dxt],[dyf,dyt],'r'); % red links are displaced
+    clf
+    hold on     % allows overplot of other lines
+    for R=1:nele
+        fn = link(R,1);   % From node
+        tn = link(R,2);   % To node
+    
+        xf = node(fn,1);  % x value of "from node"
+        yf = node(fn,2);  % y value of "from node"
+        xt = node(tn,1);  % x value of "to node"
+        yt = node(tn,2);  % y value of "to node"
+    
+        dxf = D(fn*2-1)+xf;  % deformed x value of "from node"
+        dyf = D(fn*2)+yf;    % deformed y value of "from node"
+        dxt = D(tn*2-1)+xt;  % deformed x value of "to node" 
+        dyt = D(tn*2)+yt;    % deformed y value of "to node"
+    
+        plot([xf,xt],[yf yt],'k'); % original configuration
+        if R == I
+            plot([dxf,dxt],[dyf,dyt],'b'); % blue link shows maximum force
+        else
+            plot([dxf,dxt],[dyf,dyt],'r'); % red links are displaced
+        end
     end
+    hold off  % plot all of above and get ready for next plot
 end
-hold off  % plot all of above and get ready for next plot
+
 digits(DigitsOld); % restore precision
 end
     

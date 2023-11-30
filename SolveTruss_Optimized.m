@@ -1,4 +1,4 @@
-function [MaxForce, ElemIndex] = CalculateMaxForce(node)
+function [MaxForce, MaxIndex, Displacement] = SolveTruss_Optimized(node)
     
     % Parameters
     NUM_ELEM = 18;
@@ -62,6 +62,6 @@ function [MaxForce, ElemIndex] = CalculateMaxForce(node)
         InternalForce(i) = AE * DeltaLength(i) / Length(i);
     end
     
-    [MaxForce, ElemIndex] = max(abs(InternalForce));
+    [MaxForce, MaxIndex] = max(abs(InternalForce));
 end
         
