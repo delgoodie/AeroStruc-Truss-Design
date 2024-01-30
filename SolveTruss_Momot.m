@@ -1,6 +1,5 @@
-function [MaxForce, MaxIndex, Displacements] = SolveTruss_Momot(node)
+function [MaxForce, MaxIndex, Displacements] = SolveTruss_Momot(node, OPTIMIZE)
 
-OPTIMIZE = 1;
 
 %    Dr. Mike Momot,  November 13, 2023
 % Last modified 12/8/2022. Convert displacement to local coords. Runs well.

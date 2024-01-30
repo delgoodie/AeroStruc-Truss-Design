@@ -21,7 +21,7 @@ function result = TestTrussSolver()
 
 
     opt_func = @() arrayfun(@(i)SolveTruss_Optimized(TimeTrials(i*10-9:i*10,:)), 1:1e3);
-    true_func = @() arrayfun(@(i)SolveTruss_Momot(TimeTrials(i*10-9:i*10,:)), 1:1e1);
+    true_func = @() arrayfun(@(i)SolveTruss_Momot(TimeTrials(i*10-9:i*10,:), 1), 1:1e1);
     
     fprintf('Optimal is %.1f%% faster than Momot', (timeit(true_func)*100 / timeit(opt_func) - 1) * 100);
 

@@ -7,14 +7,14 @@ NUM_ELEM = 18;
 LINK = [1 2; 1 3; 2 3; 2 4; 2 5; 3 5; 3 6; 4 5; 5 6; 4 7; 4 8; 5 8; 5 9; 6 9; 6 10; 7 8; 8 9; 9 10];
 
 % Parameters
-h = .06;
-gh = .1;
-num_iterations = 5000;
-num_trials = 10000;
+h = .1;
+gh = .01;
+num_iterations = 30000;
+num_trials = 30;
 slomo = 1;
 show_plot = 1;
 
-global_best_f = 10e10;
+global_best_f = 2.0001e3;
 global_best_r = [];
 
 % Multiple trials with different initial positions
@@ -43,8 +43,12 @@ for trial = 1:num_trials
             if f0 < global_best_f
                 global_best_f = f0;
                 global_best_r = r;
-                disp(global_best_f)
-                disp(PositionToNode(global_best_r))
+                if ~checkOverlap(PositionToNode(r))
+                    disp(global_best_f)
+                    disp(PositionToNode(global_best_r))
+                    SolveTruss_Momot(PositionToNode(global_best_r), 0);
+                    pause(10);
+                end
             end
         end
     
